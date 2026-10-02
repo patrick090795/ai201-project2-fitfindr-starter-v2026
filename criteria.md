@@ -18,16 +18,15 @@ data earns credit; *"80% seemed reasonable"* does not.
 **Two are written for you. You write three.**
 
 ---
-
 ## 1. A matching query completes all three tools
 
 Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
 **Why this target:**
-<!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
-     "my search is a plain keyword match and some phrasings will miss" is a
-     real answer. -->
+I chose 4 of 5 because the search uses keyword matching, so some reasonable
+phrasings may not match the listing text exactly. I still expect the normal
+happy path to succeed most of the time.
 
 ---
 
@@ -37,28 +36,47 @@ Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
 **Why this target:**
-<!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
-     about this path? -->
+I chose 5 of 5 because this branch is deterministic. When `search_listings`
+returns an empty list, the loop should always stop and should never pass an
+empty result into the next tool.
 
 ---
 
-## 3. Something about state
+## 3. The selected item is preserved through session state
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know that the item your search found is the same item the
-     next tool received? Name something countable or observable.
-
-     This is the criterion people find hardest, because state failure doesn't
-     look like state failure — it looks like a tool problem. Something that
-     compares session["selected_item"] against what actually reached
-     suggest_outfit is the shape you're after. -->
-
-
+For a query that returns at least one result, the item stored in
+`session["selected_item"]` is the same listing passed into `suggest_outfit`
+— in 5 of 5 tries.
 
 **Why this target:**
+I chose 5 of 5 because session state is controlled by the program and does not
+depend on model variation. The selected listing should always move through the
+session unchanged before it reaches `suggest_outfit`.
 
+---
 
+## 4. The fit card includes the important listing details
+
+For a successful run, the fit card mentions the selected item's price and
+platform, and stays between 2 and 4 sentences — in at least 4 of 5 tries.
+
+**Why this target:**
+I chose 4 of 5 because `create_fit_card` uses a language model, so the wording
+can vary between runs. Most cards should still include the required listing
+details and stay short enough to read like a social-media caption.
+
+---
+
+## 5. Search results respect the maximum price
+
+Given a query with a maximum price, every listing returned by
+`search_listings` has a price less than or equal to that maximum — in 5 of 5
+tries.
+
+**Why this target:**
+I chose 5 of 5 because the price filter is handled directly by the search tool,
+not by the language model. A listing over the user's stated budget should never
+be returned.
 
 ---
 
