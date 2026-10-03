@@ -17,6 +17,8 @@ import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+import re
+
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -107,8 +109,105 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+
+    step = "parse"
+    iterations = 0
+    
+    while step != "done":
+        iterations += 1
+        trace.check_iterations(iterations)
+    
+        if step == "parse":
+            # Extract maximum price, e.g. "under $30"
+            price_match = re.search(
+                r"\b(?:under|below|max(?:imum)?)\s*\$?(\d+(?:\.\d+)?)",
+                session["query"],
+                re.IGNORECASE,
+            )
+    
+            max_price = (
+                float(price_match.group(1))
+                if price_match
+                else None
+            )
+    
+            # Extract size, e.g. "size M" or "size 8"
+            size_match = re.search(
+                r"\bsize\s+([A-Za-z0-9/]+)",
+                session["query"],
+                re.IGNORECASE,
+            )
+    
+            size = (
+                size_match.group(1)
+                if size_match
+                else None
+            )
+    
+            # Remove price and size phrases to leave the item description.
+            description = session["query"]
+    
+            description = re.sub(
+                r"\b(?:under|below|max(?:imum)?)\s*\$?\d+(?:\.\d+)?",
+                "",
+                description,
+                flags=re.IGNORECASE,
+            )
+    
+            description = re.sub(
+                r"\b(?:in\s+)?size\s+[A-Za-z0-9/]+",
+                "",
+                description,
+                flags=re.IGNORECASE,
+            )
+    
+            description = " ".join(description.split()).strip()
+    
+            session["parsed"] = {
+                "description": description,
+                "size": size,
+                "max_price": max_price,
+            }
+    
+            step = "search"
+    
+        elif step == "search":
+            parsed = session["parsed"]
+    
+            session["search_results"] = search_listings(
+                parsed["description"],
+                parsed["size"],
+                parsed["max_price"],
+            )
+    
+            # Required branch
+            if not session["search_results"]:
+                session["error"] = (
+                    "I couldn't find a matching listing. Try changing the "
+                    "description, size, or maximum price."
+                )
+                step = "done"
+                continue
+            
+            session["selected_item"] = session["search_results"][0]
+            step = "outfit"
+    
+        elif step == "outfit":
+            session["outfit_suggestion"] = suggest_outfit(
+                session["selected_item"],
+                session["wardrobe"],
+            )
+    
+            step = "fit_card"
+    
+        elif step == "fit_card":
+            session["fit_card"] = create_fit_card(
+                session["outfit_suggestion"],
+                session["selected_item"],
+            )
+    
+            step = "done"
+    
     return session
 
 
