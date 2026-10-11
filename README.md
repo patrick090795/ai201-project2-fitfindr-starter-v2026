@@ -238,18 +238,33 @@ that produced it:
 
 
 ---
-
 ## Loop Trace
 
-<!-- One full run, printed step by step, with the MCP call visible in it.
+I added tracing to `run_agent()` using `trace.start_trace()` and `trace.step()`. The trace records each tool call, its inputs, and its returned results. The `search_listings` tool now runs through MCP, while the other two tools remain direct Python function calls.
 
-     `python app.py ask '...' --trace` once you've added the trace.step()
-     calls in Milestone 2.
+**Test command:**
 
-     Worth pasting BOTH the happy path and the empty-search path. The empty
-     one should be visibly shorter, because it stops. If your two traces are
-     the same length, your branch isn't working — and this is the fastest way
-     anyone will ever find that out. -->
+`python app.py ask 'vintage graphic tee under $30' --trace`
+
+**Actual trace output:**
+
+```text
+[1] search_listings (via MCP)
+    in:  dict with keys: description, size, max_price
+    out: 10 items: Y2K Baby Tee – Butterfly Print, Graphic Tee – 2003 Tour Bootleg Style, Vintage Band Tee – Faded Grey … +7 more
+
+[2] suggest_outfit
+    in:  dict with keys: selected_item, wardrobe
+    out: **Outfit 1: Y2K Streetwear** **New Item:** Y2K Baby Tee ...
+
+[3] create_fit_card
+    in:  dict with keys: outfit, new_item
+    out: Channeling major 2000s pop star energy with this Y2K baby tee, and it can be yours for just $18.0! ...
+```
+
+**Result:** The agent successfully completed all three tool calls in the correct order. The MCP search returned matching clothing listings, the outfit tool generated styling suggestions, and the fit-card tool created a final caption.
+
+No errors occurred during this run.
 
 **Happy path**
 
