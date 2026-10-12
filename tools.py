@@ -250,6 +250,7 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     if not outfit or not outfit.strip():
         return "I need an outfit suggestion before I can create a fit card."
 
+    
     prompt = (
         f"Write a short social-media-style caption, 2 to 4 sentences long, "
         f"for this thrift find.\n\n"
@@ -257,9 +258,16 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
         f"Price: ${new_item['price']}\n"
         f"Platform: {new_item['platform']}\n"
         f"Outfit: {outfit}\n\n"
-        "Mention the item, its price, and its platform exactly once each. "
-        "Make the caption sound natural and specific about the outfit's vibe, "
-        "not like a product description."
+        "Follow these rules:\n"
+        "1. Mention the item naturally in the caption.\n"
+        "2. Include the exact item price with a dollar sign.\n"
+        "3. Mention the selling platform by name.\n"
+        "4. Keep the caption between 2 and 4 complete sentences.\n"
+        "5. Describe at least one specific outfit detail.\n"
+        "6. Use a friendly, natural social-media tone.\n"
+        "7. Avoid repeating the price or platform.\n"
+        "Return only the caption, without headings or explanations."
     )
+
 
     return generate(prompt)
