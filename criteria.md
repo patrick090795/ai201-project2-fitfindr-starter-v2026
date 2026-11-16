@@ -149,3 +149,25 @@ be returned.
      A number you missed stays where it is, gets diagnosed, and gets a fix
      attempted. That's where the points are.
      ───────────────────────────────────────────────────────────────────────── -->
+
+## Unit 9 — Capstone Acceptance Criteria
+
+1. **Enforce the MCP search deadline.** With a 2-second deadline and a test server that delays its `search_listings` response by 5 seconds, FitFindr must report a timeout within 3 seconds of sending the tool request in all 3 trials.
+
+   **Reason:** The 2-second deadline limits the wait, and the extra second allows for local process cleanup and reporting.
+
+2. **Show a clear timeout message.** In all 3 forced-timeout trials, the user-facing response must say that the listing search timed out and suggest trying again.
+
+   **Reason:** This tells the user what happened and gives them a next step.
+
+3. **Stop the outfit workflow after a timeout.** In all 3 forced-timeout trials, the execution trace must show zero calls to `suggest_outfit` and `create_fit_card`.
+
+   **Reason:** Both steps need a listing from a completed search.
+
+4. **Write a structured timeout record.** Each forced-timeout trial must append exactly one valid JSON record to `logs/runs.jsonl`. The record must contain a UTC timestamp, the input query, the user-facing response, a positive elapsed time in milliseconds, and a `status` of `timeout`.
+
+   **Reason:** One record per run lets me verify what the user asked, what FitFindr returned, and how long the run took.
+
+5. **Create a fit card when the search succeeds.** With the same 2-second deadline and a test server that returns a matching listing within that deadline, FitFindr must create a fit card containing that listing in all 3 trials.
+
+   **Reason:** This verifies that adding the deadline preserves FitFindr’s normal shopping workflow.
