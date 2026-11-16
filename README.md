@@ -514,41 +514,21 @@ Third, my evaluation logs do not independently verify that the complete selected
 
 I stopped after making one prompt improvement because I wanted to compare the before and after results without introducing several changes at once. The results showed that the agent maintained its original performance.
 
+<!-- ===================================================================== -->
+<!-- =====================================================================-->
 
+## Capstone
 
-<!-- ═════════════════════════════════════════════════════════════════════
+**What This Extends**
 
-     SUBMISSION CHECKLIST — unit 3
+I’m extending FitFindr, the outfit-shopping agent I built in Units 3 and 4.
 
-       [ ] criteria.md has five numbered criteria, each with a target
-       [ ] Each criterion has a reason underneath it
-       [ ] All five unit 3 sections above have real content
-       [ ] Tool Inventory: all three tools, inputs WITH TYPES, a specific
-           return value, and the empty case
-       [ ] Planning Loop names the branch rule and agent.py::run_agent
-       [ ] Sample Run: one full query plus the three per-tool tests, as text
-       [ ] At least four new commits
-       [ ] Repository URL submitted — WRITE IT DOWN, you submit the same one
-           next unit
+**The Shape**
 
-     SUBMISSION CHECKLIST — unit 4
-
-       [ ] mcp_server.py exists with one tool registered
-           (or a written record of exactly where the rewire broke)
-       [ ] Run Log — Before, five criteria, five tries each
-       [ ] Real output pasted underneath, naming file and function
-       [ ] A verdict on every criterion
-       [ ] A diagnosis for every miss, naming a place AND a mechanism
-       [ ] Loop Trace, with the MCP call visible in it
-       [ ] All three failure modes triggered and handled
-       [ ] One improvement, with Run Log — After in the same format
-       [ ] What's Still Broken
-       [ ] At least four new commits
-       [ ] The SAME repository URL as last unit
-
-     Do not delete and recreate this repository. Your commit history is what
-     shows your criteria existed before your results did.
-     ═════════════════════════════════════════════════════════════════════ -->
+I chose Shape B to handle slow responses from the MCP listing search.
+If the search exceeds its deadline, FitFindr will tell the user that
+the search timed out, end the run before the outfit and fit-card steps,
+and record the outcome using the existing structured logger.
 
 ---
 
