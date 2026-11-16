@@ -49,7 +49,6 @@ TEMPERATURE = 0.9
 # real answers. `run_eval.py` handles that for you.
 CACHE_ENABLED = os.getenv("AI201_CACHE", "1") != "0"
 
-
 # ─── The agent loop ──────────────────────────────────────────────────────────
 
 # The most common architectural failure in production agents is a missing stop

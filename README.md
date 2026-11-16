@@ -85,6 +85,7 @@ stops early and tells the user what they can change in their search.
 ## Sample Run
 
 **One full query**
+
 ```text
 
 python app.py ask 'vintage graphic tee under $30'
@@ -115,6 +116,7 @@ print over on my depop before it's gone!
 
 2 model calls this session, 586 prompt + 254 output tokens
 ```
+
 **The three tools, tested one at a time**
 
 ```text
@@ -144,40 +146,40 @@ python -c "from tools import create_fit_card; from utils.data_loader import load
 
 Scored these vintage Levi's 501 jeans for just $38.0 on depop, and they fit like an absolute dream. I love styling them with crisp white sneakers for that effortlessly cool, off-duty weekend aesthetic. Grab them before I change my mind and keep them forever!
 ```
+
 ---
+
 ## How I Used AI
 
 **Moment 1**
 
-- *What I asked for:* I asked AI to help me review my `search_listings`
+- _What I asked for:_ I asked AI to help me review my `search_listings`
   implementation and spot errors in the code.
-- *What came back:* The AI pointed out that my `sort()` and `return` statements
+- _What came back:_ The AI pointed out that my `sort()` and `return` statements
   were indented inside the `for` loop, which caused the function to return
   after checking only the first listing.
-- *What I changed:* I moved the sorting and final return outside the loop so
+- _What I changed:_ I moved the sorting and final return outside the loop so
   every listing is checked before the results are ranked and returned.
 
 **Moment 2**
 
-- *What I asked for:* I asked AI to help me design and connect the planning
+- _What I asked for:_ I asked AI to help me design and connect the planning
   loop in `agent.py`.
-- *What came back:* The AI suggested storing each tool result in the session
+- _What came back:_ The AI suggested storing each tool result in the session
   dictionary and branching immediately when `search_listings` returned an
   empty list.
-- *What I changed:* I implemented the loop so search results, the selected item,
+- _What I changed:_ I implemented the loop so search results, the selected item,
   the outfit suggestion, and the fit card all move through session state. I also
   added an early-stop message that tells the user to change the description,
   size, or maximum price when no listing matches.
 
-  
 **Moment 3 — Unit 4 Testing**
 
-- *What I asked for:* I asked AI to help me review the results of my before-and-after evaluations and identify one improvement I could make without changing the original acceptance criteria.
+- _What I asked for:_ I asked AI to help me review the results of my before-and-after evaluations and identify one improvement I could make without changing the original acceptance criteria.
 
-- *What came back:* AI helped me identify that the fit-card prompt could be more specific, even though all five baseline trials met Criterion 4. It suggested clearer rules for including the item price, selling platform, sentence count, and outfit details.
+- _What came back:_ AI helped me identify that the fit-card prompt could be more specific, even though all five baseline trials met Criterion 4. It suggested clearer rules for including the item price, selling platform, sentence count, and outfit details.
 
-- *What I changed:* I updated the prompt inside `tools.py::create_fit_card()` with seven specific instructions. I then ran `python run_eval.py --label after` with caching disabled and compared the new results with my baseline evaluation. The criteria still passed at 5/5, so I reported maintained performance rather than claiming an increase in the pass rate.
-
+- _What I changed:_ I updated the prompt inside `tools.py::create_fit_card()` with seven specific instructions. I then ran `python run_eval.py --label after` with caching disabled and compared the new results with my baseline evaluation. The criteria still passed at 5/5, so I reported maintained performance rather than claiming an increase in the pass rate.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
@@ -188,21 +190,18 @@ Scored these vintage Levi's 501 jeans for just $38.0 on depop, and they fit like
 
 ## Run Log — Before
 
-
-| Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-|---|---|---|---|---|---|---|---|
-| 1. Three-tool workflow | 4/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 2. Empty search stops early | 5/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 3. Selected item preserved | 5/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 4. Fit-card details | 4/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 5. Maximum price respected | 5/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-
+| Criterion                   | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict   |
+| --------------------------- | ------ | ----- | ----- | ----- | ----- | ----- | --------- |
+| 1. Three-tool workflow      | 4/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 2. Empty search stops early | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 3. Selected item preserved  | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 4. Fit-card details         | 4/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 5. Maximum price respected  | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
 
 ### Evidence from the Baseline Evaluation
 
 The following examples are actual outputs from the baseline evaluation,
 produced by `run_eval.py::main` using `agent.py::run_agent`.
-
 
 ### Evidence — Criterion 1
 
@@ -279,7 +278,6 @@ produced by `run_eval.py::main` using `agent.py::run_agent`.
 
 The trace does not independently compare the complete item dictionaries.
 
-
 ### Evidence — Criterion 4
 
 **Source:** `results/run_2026-10-11_2216_before.md`  
@@ -299,7 +297,6 @@ Channeling peak early 2000s streetwear with this dreamy Y2K Baby Tee — Butterf
 
 **Verification:** The fit card includes the selected item's price ($18) and platform (Depop) and contains between 2 and 4 sentences.
 
-
 ### Evidence — Criterion 5
 
 **Source:** `results/run_2026-10-11_2216_before.md`  
@@ -318,9 +315,6 @@ Channeling peak early 2000s streetwear with this dreamy Y2K Baby Tee — Butterf
 **Verification:** The selected listing costs $18, which is within the $20 maximum price. The `search_listings()` function in `tools.py` checks each listing against `max_price` and excludes listings whose prices exceed the limit.
 
 The baseline run log reports eight matching results but does not display all eight prices. Therefore, the code logic supports the criterion, while the saved trace alone does not independently prove that every result meets the price limit.
-
-
-
 
 ## Verdicts and Diagnoses
 
@@ -345,6 +339,7 @@ However, I noticed that my tests mainly used straightforward queries. For exampl
 If I were to make one criterion stricter, I would improve Criterion 1 by testing five different matching queries instead of repeating the same query. This would help measure the agent's ability to handle different clothing descriptions.
 
 ---
+
 ## Loop Trace
 
 I added tracing to `run_agent()` using `trace.start_trace()` and `trace.step()`. The trace records each tool call, its inputs, and its returned results. The `search_listings` tool now runs through MCP, while the other two tools remain direct Python function calls.
@@ -373,7 +368,6 @@ I added tracing to `run_agent()` using `trace.start_trace()` and `trace.step()`.
 
 No errors occurred during this run.
 
-
 ### Additional Failure-Mode Tests
 
 **Empty wardrobe**
@@ -391,8 +385,6 @@ ModelUnavailable: The model rejected your API key. Check GEMINI_API_KEY in your 
 ```
 
 I restored the valid configuration after the test. This verified that a model authentication failure produces a useful diagnostic message instead of silently returning a misleading result.
-
-
 
 **Empty search**
 
@@ -416,8 +408,7 @@ Output from `results/run_2026-10-11_2216_before.md`, produced by `run_eval.py::m
 
 The agent correctly stopped after the MCP search returned an empty list. It did not call `suggest_outfit` or `create_fit_card`.
 
-
-**On the MCP move:** 
+**On the MCP move:**
 
 I moved `search_listings` from a direct Python function call to an MCP tool.
 
@@ -453,13 +444,13 @@ I ran the same six scenarios again using:
 
 Caching was disabled, and each scenario ran five times.
 
-| Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-|---|---|---|---|---|---|---|---|
-| 1. Three-tool workflow | 4/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 2. Empty search stops early | 5/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 3. Selected item preserved | 5/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 4. Fit-card details | 4/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
-| 5. Maximum price respected | 5/5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| Criterion                   | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict   |
+| --------------------------- | ------ | ----- | ----- | ----- | ----- | ----- | --------- |
+| 1. Three-tool workflow      | 4/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 2. Empty search stops early | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 3. Selected item preserved  | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 4. Fit-card details         | 4/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
+| 5. Maximum price respected  | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5) |
 
 Criteria 3 and 5 were evaluated using the deterministic session-state handoff and price-filtering logic. The run logs do not independently assert these conditions.
 
@@ -474,7 +465,6 @@ The updated prompt continued to generate captions with the required price, platf
 I cannot conclude that the improvement increased the pass rate because the baseline already achieved 5/5. However, the new prompt provides clearer instructions about the required caption format.
 
 One remaining limitation is that some captions use similar opening phrases. In the future, I would test more clothing items and improve the variety of generated captions.
-
 
 ### Evidence — After Run, Criterion 4
 
@@ -495,8 +485,6 @@ Channel your inner 2000s pop star with this adorable Y2K baby tee featuring a go
 ```
 
 **Verification:** The after-run fit card contains three sentences, includes the $18.0 price and Depop platform, and describes the outfit. It meets Criterion 4.
-
-
 
 ---
 
@@ -529,6 +517,28 @@ I chose Shape B to handle slow responses from the MCP listing search.
 If the search exceeds its deadline, FitFindr will tell the user that
 the search timed out, end the run before the outfit and fit-card steps,
 and record the outcome using the existing structured logger.
+
+## Acceptance Criteria
+
+1. **Enforce the MCP search deadline.** With a 2-second deadline and a test server that delays its `search_listings` response by 5 seconds, FitFindr must report a timeout within 3 seconds of sending the tool request in all 3 trials.
+
+   **Reason:** The 2-second deadline limits the wait, and the extra second allows for local process cleanup and reporting.
+
+2. **Show a clear timeout message.** In all 3 forced-timeout trials, the user-facing response must say that the listing search timed out and suggest trying again.
+
+   **Reason:** This tells the user what happened and gives them a next step.
+
+3. **Stop the outfit workflow after a timeout.** In all 3 forced-timeout trials, the execution trace must show zero calls to `suggest_outfit` and `create_fit_card`.
+
+   **Reason:** Both steps need a listing from a completed search.
+
+4. **Write a structured timeout record.** Each forced-timeout trial must append exactly one valid JSON record to `logs/runs.jsonl`. The record must contain a UTC timestamp, the input query, the user-facing response, a positive elapsed time in milliseconds, and a `status` of `timeout`.
+
+   **Reason:** One record per run lets me verify what the user asked, what FitFindr returned, and how long the run took.
+
+5. **Create a fit card when the search succeeds.** With the same 2-second deadline and a test server that returns a matching listing within that deadline, FitFindr must create a fit card containing that listing in all 3 trials.
+
+   **Reason:** This verifies that adding the deadline preserves FitFindr’s normal shopping workflow.
 
 ---
 
