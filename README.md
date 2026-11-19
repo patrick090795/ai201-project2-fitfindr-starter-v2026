@@ -509,15 +509,82 @@ I stopped after making one prompt improvement because I wanted to compare the be
 
 **What This Extends**
 
-I’m extending FitFindr, the outfit-shopping agent I built in Units 3 and 4.
+I extended FitFindr, the outfit-shopping agent I built in Units 3 and 4. The capstone adds a two-second deadline to the MCP listing request and writes structured evidence for successful runs and timeouts.
 
 **The Shape**
 
-I chose Shape B to handle slow responses from the MCP listing search.
-If the search exceeds its deadline, FitFindr will tell the user that
-the search timed out, end the run before the outfit and fit-card steps,
-and record the outcome using the existing structured logger.
+I chose Shape B, Harden against failure. If the listing search times out, FitFindr asks the user to try again and stops before generating an outfit or fit card. Automatic retries, fallback search providers, and changes to outfit generation were out of scope.
 
----
+**Running It**
 
-📖 **How to run this project: [RUNNING.md](RUNNING.md)**
+I chose Path B, local with logs. Follow [RUNNING.md](RUNNING.md) to set up the environment, then run the query below from the repository root in Git Bash. For live fit-card generation, set `GEMINI_API_KEY` in the checkout’s local `.env`.
+
+```bash
+python app.py ask 'vintage graphic tee under $30' --trace
+```
+
+I verified both paths in a separate local checkout at commit `d8ba7b8`. With `FITFINDR_TEST_SEARCH_DELAY=5`, the MCP timeout was recorded after 2,020.224 ms. With the API key configured, the normal run generated a fit card and logged `success` in 6,633.215 ms of agent runtime, using 581 prompt tokens and 170 output tokens across two live Gemini calls.
+
+**Instrumentation**
+
+FitFindr appends JSON records to `logs/runs.jsonl`. Each record below includes a UTC timestamp, query, response, agent duration in milliseconds, and status. Timeout records also include `search_timeout_ms`, measured from the start of the MCP tool request through cleanup and the timeout trace. Agent duration also includes MCP startup.
+
+The excerpt contains the six scored after trials and four additional successful runs.
+
+```jsonl
+{"timestamp": "2026-11-19T00:56:20.144984+00:00", "query": "vintage graphic tee under $30", "response": "The listing search timed out. Please try again.", "elapsed_ms": 4279.787, "status": "timeout", "search_timeout_ms": 2015.848}
+{"timestamp": "2026-11-19T00:56:25.165372+00:00", "query": "vintage graphic tee under $30", "response": "The listing search timed out. Please try again.", "elapsed_ms": 4362.671, "status": "timeout", "search_timeout_ms": 2010.926}
+{"timestamp": "2026-11-19T00:56:30.301992+00:00", "query": "vintage graphic tee under $30", "response": "The listing search timed out. Please try again.", "elapsed_ms": 4419.346, "status": "timeout", "search_timeout_ms": 2012.162}
+{"timestamp": "2026-11-19T00:56:33.296176+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2364.071, "status": "success"}
+{"timestamp": "2026-11-19T00:56:36.289341+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2478.234, "status": "success"}
+{"timestamp": "2026-11-19T00:56:39.261072+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2516.346, "status": "success"}
+{"timestamp": "2026-11-19T01:00:03.225922+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2477.773, "status": "success"}
+{"timestamp": "2026-11-19T01:00:06.535304+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2783.831, "status": "success"}
+{"timestamp": "2026-11-19T01:00:09.784001+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2776.119, "status": "success"}
+{"timestamp": "2026-11-19T01:00:12.914333+00:00", "query": "vintage graphic tee under $30", "response": "Channel your inner early 2000s icon with this adorable Y2K baby tee featuring a dreamy butterfly print! Style it with baggy dark-wash jeans and chunky white sneakers for the ultimate nostalgic streetwear fit. Grab this nostalgic gem right now on depop for just $18.0!", "elapsed_ms": 2645.402, "status": "success"}
+```
+
+Failure example from a separate run with a five-second server delay:
+
+```jsonl
+{"timestamp": "2026-11-19T01:06:12.628221+00:00", "query": "vintage graphic tee under $30", "response": "The listing search timed out. Please try again.", "elapsed_ms": 5004.415, "status": "timeout", "search_timeout_ms": 2067.542}
+```
+
+**What It Costs**
+
+I measured elapsed agent time on ten local runs by averaging the `elapsed_ms` field in the excerpt above. The sample included seven successful searches with cached model responses and three timeouts. It averaged **3.11 seconds per run**. At the same mix of outcomes and cache behavior, 100 sequential runs per day would take about 3.11 × 100 = **311 seconds**, or **5 minutes and 11 seconds**. The separate live checkout run took 6.63 seconds and used 751 tokens.
+
+**Run Log and Verdicts**
+
+I used the same query in all trials. For criteria 1–4, the server delayed its search response by five seconds. For criterion 5, it used a 100 ms delay. The slow baseline runs took **8.043 s**, **8.010 s**, and **8.373 s** end to end. Those timings include process startup and downstream work.
+
+| Criterion | Trial 1 | Trial 2 | Trial 3 | Evidence and diagnosis |
+|---|---|---|---|---|
+| 1. Enforce the MCP search deadline | MISSED | MISSED | MISSED | The client awaited the delayed MCP response without a request deadline. No trial reported a timeout. |
+| 2. Show a clear timeout message | MISSED | MISSED | MISSED | The agent received a normal search result and had no timeout branch to display a retry message. |
+| 3. Stop the outfit workflow after a timeout | MISSED | MISSED | MISSED | All three searches returned listings and the agent ran both downstream tools. |
+| 4. Write a structured timeout record | MISSED | MISSED | MISSED | The terminal trace was the only run evidence. No `logs/runs.jsonl` file existed. |
+| 5. Create a fit card when the search succeeds | MET | MET | MET | Each fast trial produced a card describing the matching butterfly-print Y2K baby tee at $18. |
+
+**The Improvement**
+
+I applied the deadline to the MCP listing request after server initialization. When the deadline expires, the client cancels the request and the agent ends the workflow before calling either downstream tool. I also added JSONL logging so the response and timing can be checked for each completed run covered by the tests. The server’s test delay lets me reproduce both the slow and fast cases.
+
+| Criterion | Trial 1 | Trial 2 | Trial 3 | Evidence |
+|---|---|---|---|---|
+| 1. Enforce the MCP search deadline | MET | MET | MET | The MCP timeout was recorded at 2,015.848 ms, 2,010.926 ms, and 2,012.162 ms, all below the 3,000 ms target. |
+| 2. Show a clear timeout message | MET | MET | MET | Every slow trial displayed “The listing search timed out. Please try again.” |
+| 3. Stop the outfit workflow after a timeout | MET | MET | MET | The slow traces showed zero calls to `suggest_outfit` and `create_fit_card`. |
+| 4. Write a structured timeout record | MET | MET | MET | The six scored runs produced six log records that minute. Each slow trial had its own UTC timestamp, query, message, positive duration, and `timeout` status. |
+| 5. Create a fit card when the search succeeds | MET | MET | MET | All three fast trials produced a fit card describing the matching butterfly-print baby tee at $18. |
+
+**What's Still Broken**
+
+All five criteria were met after the change. I would tighten criterion 1 by lowering the reporting limit from 3,000 ms to 2,500 ms while keeping the two-second request deadline. The three measured timeout trials used only a small fraction of the original one-second allowance for cleanup and reporting.
+
+During the clean-checkout test, Gemini authentication errors could exit before writing a run record. With another unit, I would first add an error record for that failure path. This would make a failed run visible in the log even when it stops before creating a fit card.
+
+**How I Used AI**
+
+1. I asked why the five-second test runs were finishing in under five seconds. AI suggested checking how the MCP subprocess received the test environment variable. I used Git output to inspect the startup code, added explicit forwarding, and reran the baseline with the delay in effect.
+2. I asked for help verifying the clean checkout after Gemini rejected the API key. AI suggested checking the exact configuration path and whether the key loaded without printing it. I found that the checkout had no local `.env`, copied the working configuration locally, and reran the test to verify a live fit card and a new success record.
