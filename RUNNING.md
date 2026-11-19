@@ -246,3 +246,28 @@ history is what shows your criteria existed before your results did.
 units.
 
 `results/` is deliberately **not** in `.gitignore`.
+
+## Unit 9 capstone verification
+
+FitFindr runs locally. Follow the setup above, then configure
+`GEMINI_API_KEY` in a local `.env` in this checkout for live fit-card
+generation. Keep `.env` out of Git.
+
+Run the normal path from the repository root in Git Bash:
+
+```bash
+python app.py ask 'vintage graphic tee under $30' --trace
+tail -n 1 logs/runs.jsonl
+```
+
+To reproduce the timeout, inject a five-second MCP search delay:
+
+```bash
+FITFINDR_TEST_SEARCH_DELAY=5 python app.py ask 'vintage graphic tee under $30' --trace
+tail -n 1 logs/runs.jsonl
+```
+
+Both paths were verified in a separate checkout at commit `d8ba7b8`.
+The normal run generated a fit card in 6.63 seconds and logged
+`status: "success"`. The slow run reported the timeout 2.020 seconds
+after the MCP request started and logged `status: "timeout"`.
