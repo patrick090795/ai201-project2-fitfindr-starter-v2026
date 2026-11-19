@@ -28,7 +28,9 @@ right trade for one unit.
 
 import asyncio
 import json
+import os
 import sys
+from time import perf_counter
 from pathlib import Path
 
 SERVER = Path(__file__).parent / "mcp_server.py"
@@ -36,6 +38,14 @@ SERVER = Path(__file__).parent / "mcp_server.py"
 
 class MCPError(RuntimeError):
     """The server couldn't be reached, or it refused the call."""
+
+
+class SearchTimeout(MCPError):
+    """The listing search exceeded its response deadline."""
+
+    def __init__(self, started_at: float):
+        super().__init__("The listing search timed out. Please try again.")
+        self.started_at = started_at
 
 
 def call_tool(name: str, arguments: dict):
@@ -69,32 +79,47 @@ def call_tool(name: str, arguments: dict):
 
 
 async def _call(name: str, arguments: dict):
+    from anyio import CancelScope, current_time
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
+    test_delay = os.environ.get("FITFINDR_TEST_SEARCH_DELAY")
+    test_env = {}
+    if test_delay is not None:
+        test_env["FITFINDR_TEST_SEARCH_DELAY"] = test_delay
 
     params = StdioServerParameters(
         command=sys.executable,
         args=[str(SERVER)],
+        env=test_env,
     )
 
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+    started_at = 0.0
+    with CancelScope() as search_scope:
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
 
-            available = {t.name for t in (await session.list_tools()).tools}
-            if name not in available:
-                raise MCPError(
-                    f"The server doesn't offer a tool called '{name}'.\n"
-                    f"It offers: {', '.join(sorted(available)) or '(nothing yet)'}\n"
-                    f"Register your tool in mcp_server.py — that's Milestone 1."
-                )
+                available = {t.name for t in (await session.list_tools()).tools}
+                if name not in available:
+                    raise MCPError(
+                        f"The server doesn't offer a tool called '{name}'.\n"
+                        f"It offers: {', '.join(sorted(available)) or '(nothing yet)'}\n"
+                        f"Register your tool in mcp_server.py — that's Milestone 1."
+                    )
 
-            result = await session.call_tool(name, arguments)
+                if name == "search_listings":
+                    started_at = perf_counter()
+                    search_scope.deadline = current_time() + 2.0
+                result = await session.call_tool(name, arguments)
+                search_scope.deadline = float("inf")
 
-            if getattr(result, "isError", False):
-                raise MCPError(f"The tool '{name}' returned an error: {_text(result)}")
+                if getattr(result, "isError", False):
+                    raise MCPError(f"The tool '{name}' returned an error: {_text(result)}")
 
-            return _unwrap(result)
+                return _unwrap(result)
+
+    raise SearchTimeout(started_at)
 
 
 def _unwrap(result):

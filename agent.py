@@ -13,13 +13,39 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from time import perf_counter
+
 import config
 import trace
 import re
 
 from tools import suggest_outfit, create_fit_card
 from generate import ModelUnavailable
-from mcp_client import call_tool
+from mcp_client import SearchTimeout, call_tool
+
+
+RUN_LOG = Path(__file__).resolve().parent / "logs" / "runs.jsonl"
+
+
+def _log_run(session: dict, started_at: float, search_started_at: float | None) -> None:
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "query": session["query"],
+        "response": session["error"] or session["fit_card"],
+        "elapsed_ms": round((perf_counter() - started_at) * 1000, 3),
+        "status": "error" if session["error"] else "success",
+    }
+    if search_started_at is not None:
+        record["status"] = "timeout"
+        record["search_timeout_ms"] = round(
+            (perf_counter() - search_started_at) * 1000, 3
+        )
+    RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with RUN_LOG.open("a", encoding="utf-8") as log:
+        log.write(json.dumps(record) + "\n")
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -108,6 +134,8 @@ def run_agent(query: str, wardrobe: dict) -> dict:
       • A handler for ModelUnavailable, so a bad key produces a message rather
         than a stack trace. The import is already at the top of this file.
     """
+    started_at = perf_counter()
+    search_started_at = None
     session = new_session(query, wardrobe)
 
     trace.start_trace()
@@ -177,14 +205,24 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         elif step == "search":
             parsed = session["parsed"]
 
-            session["search_results"] = call_tool(
-                "search_listings",
-                {
-                    "description": parsed["description"],
-                    "size": parsed["size"],
-                    "max_price": parsed["max_price"],
-                },
-            )
+            try:
+                session["search_results"] = call_tool(
+                    "search_listings",
+                    {
+                        "description": parsed["description"],
+                        "size": parsed["size"],
+                        "max_price": parsed["max_price"],
+                    },
+                )
+            except SearchTimeout as exc:
+                search_started_at = exc.started_at
+                session["error"] = str(exc)
+                trace.step(
+                    "search_listings (via MCP)",
+                    inputs=parsed,
+                    note=session["error"],
+                )
+                break
 
             trace.step(
                 "search_listings (via MCP)",
@@ -261,6 +299,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             step = "done"
 
     
+    _log_run(session, started_at, search_started_at)
     return session
 
 

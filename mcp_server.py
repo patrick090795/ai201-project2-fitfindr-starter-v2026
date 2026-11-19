@@ -60,6 +60,8 @@ works with a direct call, and **a documented failure earns the point in full.**
 from mcp.server.fastmcp import FastMCP
 
 from tools import search_listings as _search_listings_impl  # noqa: F401 — you'll use this below
+import os 
+import time
 
 # log_level="WARNING" keeps the server from printing an INFO line for every
 # request. Without it your terminal fills with "Processing request of type
@@ -85,6 +87,10 @@ def search_listings(
     details. If no listings match the search criteria, returns
     an empty list.
     """
+    test_delay = float(os.environ.get("FITFINDR_TEST_SEARCH_DELAY", "0"))
+    if test_delay > 0:
+        time.sleep(test_delay)
+
     return _search_listings_impl(description, size, max_price)
 
 # ──────────────────────────────────────────────────────────────────────────────
